@@ -11,6 +11,9 @@
 		<meta charset="utf-8"/>
 		<!--Lovingly stolen from http://codepen.io/tobyj/pen/QjvEex -->
 		<style>
+		  .container {
+		    overflow: hidden;
+		  }
 			.lightrope {
 			  text-align: center;
 			  white-space: nowrap;
@@ -171,14 +174,16 @@
 			<div class="nav-wrapper container"><a id="logo-container" href="#" class="brand-logo">Griswold LED Control</a>
 				<ul class="right hide-on-med-and-down">
 					<li><a href="#" class="mc-navlink" data-pane="pane1">Wheel</a></li>
-					<li><a href="#" class="mc-navlink" data-pane="pane3">Gradient</a></li>
+					<!--<li><a href="#" class="mc-navlink" data-pane="pane3">Gradient</a></li>-->
 					<li><a href="#" class="mc-navlink" data-pane="pane2">Modes</a></li>
+					<li><a href="#" class="mc-navlink" data-pane="pane4">Console</a></li>
 				</ul>
 
 				<ul id="nav-mobile" class="side-nav">
 					<li><a href="#" class="mc-navlink" data-pane="pane1">Wheel</a></li>
-					<li><a href="#" class="mc-navlink" data-pane="pane3">Gradient</a></li>
+					<!--<li><a href="#" class="mc-navlink" data-pane="pane3">Gradient</a></li>-->
 					<li><a href="#" class="mc-navlink" data-pane="pane2">Modes</a></li>
+					<li><a href="#" class="mc-navlink" data-pane="pane4">Console</a></li>
 				</ul>
 				
 				<a href="#" data-activates="nav-mobile" class="button-collapse"><i class="material-icons">menu</i></a>
@@ -214,9 +219,7 @@
 			<div class="section">
 				<div class="row">
 					<div class="col s12 m6">
-						<div style="height: 330px; width: 330px;">
-							<canvas id="myCanvas" width="330" height="330" style="-webkit-user-select: none;-webkit-tap-highlight-color: rgba(0,0,0,0);-moz-user-select:none;"></canvas>
-						</div>
+            <div id="color-picker"></div>
 					</div>
 					<div class="col s12 m6">
 						<div class="card-panel" id="status">
@@ -279,8 +282,18 @@
 							<i class="material-icons right">send</i>
 						</a>
 					</div>
+					<div class="col s12 m6 l3 btn_grid">
+						<a class="btn waves-effect waves-light btn_mode" name="action" data-mode="sparkle">SPARKLE
+							<i class="material-icons right">send</i>
+						</a>
+					</div>
 					<div class="col s12 m6 l2 btn_grid">
 						<a class="btn waves-effect waves-light btn_mode" name="action" data-mode="palette_anims">PALETTE ANIMS
+							<i class="material-icons right">send</i>
+						</a>
+					</div>					
+					<div class="col s12 m6 l2 btn_grid">
+						<a class="btn waves-effect waves-light btn_mode" name="action" data-mode="speckle_palette">SPECKLE PALETTE
 							<i class="material-icons right">send</i>
 						</a>
 					</div>					
@@ -307,6 +320,11 @@
 					</div>
 					<div class="col s12 m6 l2 btn_grid">
 						<a class="btn waves-effect waves-light btn_mode" name="action" data-mode="tv">TV
+							<i class="material-icons right">send</i>
+						</a>
+					</div>
+					<div class="col s12 m6 l2 btn_grid">
+						<a class="btn waves-effect waves-light btn_mode" name="action" data-mode="eyes">EYES
 							<i class="material-icons right">send</i>
 						</a>
 					</div>
@@ -458,7 +476,7 @@
 				</div>
 			</div>
 		</div>
-
+<!--
 		<div class="container mc_pane hide" id="pane3">
 		    <div style="width:800px; height:800px; margin:0 auto;">
 		    	<br>
@@ -471,6 +489,17 @@
     			H, S, V = <span id="hsv"></span>
     			<br />    		
 				<input id='jscolor_picker' readonly = "true" value="ffcc00" class="jscolor {onFineChange:'gradientPickerUpdate(this)',width:800, height:450, position:'bottom', borderColor:'#FFF', insetColor:'#FFF', backgroundColor:'#666'}">
+			</div>
+		</div>
+--> 
+
+		<div class="container mc_pane hide" id="pane4">
+			<div class="col s12 m6 l3 btn_grid">
+				<a class="btn waves-effect waves-light btn_reboot" name="action">Reboot
+					<i class="material-icons right">send</i>
+				</a>
+			</div>		
+		    <div style="" id="console">
 			</div>
 		</div>
 
@@ -494,9 +523,8 @@
 	
 		<!--Import jQuery before materialize.js-->
 		<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-		<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>-->
-		<script src="materialize.min.js"></script>
-		<script src="jscolor.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/js/materialize.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/@jaames/iro/dist/iro.min.js"></script>
 		<script type="text/javascript">(function($){
 $(function(){
 	  
@@ -504,10 +532,61 @@ $(function(){
 	var host = window.location.hostname;
 	//host = "192.168.0.24";
 
-	var ws_url = 'ws://' + host + ':81';
+	var ws_url = 'ws://' + host + '/ws';
 	var connection;
 	var ws_waiting = 0;
 	var last_pane = null;
+	var es;
+
+  // **** IRO.js Color picker ****
+  function hexToRgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16)
+    } : null;
+  }
+  
+  var colorPicker = new iro.ColorPicker('#color-picker', {
+    layout: [
+      {
+        component: iro.ui.Wheel,
+        options: {}
+      },
+      {
+        // regular value slider
+        component: iro.ui.Slider,
+        options: {
+      }
+      },
+      {
+        // hue slider
+        component: iro.ui.Slider,
+        options: {
+          sliderType: 'hue'
+        }
+      },
+      {
+        // saturation slider
+        component: iro.ui.Slider,
+        options: {
+          sliderType: 'saturation'
+        }
+      },
+    ]
+  });
+  
+  function onColorChange(color, changes) {
+    // print the color's new hex value to the developer console
+    console.log(color.hexString);
+    wsSetAll(color.hexString.substr(1));
+    
+		$('#status').css("backgroundColor", color.hexString);
+		var rgb = hexToRgb(color.hexString);
+		$('#status_color').text(color.hexString + " - R=" + rgb.r + ", G=" + rgb.g + ", B=" + rgb.b);
+  }
+  colorPicker.on('input:end', onColorChange);
 
 	// ******************************************************************
 	// Side navigation
@@ -524,6 +603,10 @@ $(function(){
 		wsSendCommand('$');
 	});
 	
+	function addMessage(m){
+      var msg = $('<div></div>').append(m).appendTo("#console");
+    }
+
 	function showPane(pane) {
 		$('.mc_pane').addClass('hide');
 		$('#' + pane).removeClass('hide');
@@ -534,43 +617,44 @@ $(function(){
 			wsSendCommand('$'); // request status in JSON format.
 		//}
 
-		if (pane == "pane3") {
-			$('#jscolor_picker')[0].jscolor.show();
-		}
+		// if (pane == "pane3") {
+		// 	$('#jscolor_picker')[0].jscolor.show();
+		// }
 
 		if (pane != 'pane0') {
 			last_pane = pane;
 		}
 	}
 	
-	gradientPickerUpdate = function(picker) {
+	// gradientPickerUpdate = function(picker) {
 		
-    	document.getElementById('hex-str').innerHTML = picker.toHEXString();
-    	document.getElementById('rgb-str').innerHTML = picker.toRGBString();
+ //    	document.getElementById('hex-str').innerHTML = picker.toHEXString();
+ //    	document.getElementById('rgb-str').innerHTML = picker.toRGBString();
 
-    	document.getElementById('rgb').innerHTML =
-        	Math.round(picker.rgb[0]) + ', ' +
-        	Math.round(picker.rgb[1]) + ', ' +
-        	Math.round(picker.rgb[2]);
+ //    	document.getElementById('rgb').innerHTML =
+ //        	Math.round(picker.rgb[0]) + ', ' +
+ //        	Math.round(picker.rgb[1]) + ', ' +
+ //        	Math.round(picker.rgb[2]);
 
-    	document.getElementById('hsv').innerHTML =
-        	Math.round(picker.hsv[0]) + '&deg;, ' +
-        	Math.round(picker.hsv[1]) + '%, ' +
-        	Math.round(picker.hsv[2]) + '%';
+ //    	document.getElementById('hsv').innerHTML =
+ //        	Math.round(picker.hsv[0]) + '&deg;, ' +
+ //        	Math.round(picker.hsv[1]) + '%, ' +
+ //        	Math.round(picker.hsv[2]) + '%';
 
-    	var red = Math.round(picker.rgb[0]);
-    	var green = Math.round(picker.rgb[1]);
-    	var blue = Math.round(picker.rgb[2]);
+ //    	var red = Math.round(picker.rgb[0]);
+ //    	var green = Math.round(picker.rgb[1]);
+ //    	var blue = Math.round(picker.rgb[2]);
         
-		var mainColorHex = componentToHex(red) + componentToHex(green) + componentToHex(blue);
+	// 	var mainColorHex = componentToHex(red) + componentToHex(green) + componentToHex(blue);
 
-		wsSetAll(mainColorHex);
-	}
+	// 	wsSetAll(mainColorHex);
+	// }
 
 	function connect() {
 		console.log("Connection websockets to:", ws_url);
+		ws_waiting = 0;
 		connection = new WebSocket(ws_url, ['arduino']);
-				
+
 		// When the connection is open, send some data to the server
 		connection.onopen = function () {
 			//connection.send('Ping'); // Send the message 'Ping' to the server
@@ -580,7 +664,16 @@ $(function(){
 			} else {
 				showPane('pane1');
 			}
+			wsSendCommand('$');
 		};
+
+		// Reconnect logic
+		function reconnect() {
+    		setTimeout(function() {
+      			connect();
+    		}, 1000)
+    		showPane('pane0');
+		}
 
 		// Log errors
 		connection.onerror = function (error) {
@@ -588,14 +681,12 @@ $(function(){
 			$('#mc-wsloader').addClass('hide');
 			$('#mc-wserror').removeClass('hide');
 			ws.close();
+			reconnect();
 		};
 
 		connection.onclose = function(e) {
-    		console.log('WebSocket closed: reconnect attempt in 1 second', e.reason);
-    		setTimeout(function() {
-      			connect();
-    		}, 1000)
-    		showPane('pane0');
+			console.log('WebSocket closed: reconnect attempt in 1 second', e.reason);
+    		reconnect();
   		};
 
 		// Log messages from the server
@@ -628,8 +719,8 @@ $(function(){
 				$(".btn_glitter_mode").eq(!obj.glitter_on).addClass("blue");
 
 				updateStatusUI(null, obj.color);
-				$("#jscolor_picker")[0].jscolor.fromRGB(obj.color[0],obj.color[1],obj.color[2]);
-
+				//$("#jscolor_picker")[0].jscolor.fromRGB(obj.color[0],obj.color[1],obj.color[2]);
+				colorPicker.color.rgb = { r: obj.color[0], g: obj.color[1], b: obj.color[2] }
 				$(".palette_name").text(obj.palette_name);
 				$("#switch_glitter_wipe")[0].checked = obj.glitter_wipe_on;
 			} else if (e.data.charAt(0) == 'p') {
@@ -639,6 +730,24 @@ $(function(){
 
 			ws_waiting = 0;
 		};
+
+		console.log("Connection for EventSOurce to: /events");
+		es = new EventSource('/events');
+ 		es.onopen = function(e) {
+        	addMessage("Events Opened");
+      	};
+      	es.onerror = function(e) {
+        	if (e.target.readyState != EventSource.OPEN) {
+          		addMessage("Events Closed");
+        	}
+      	};
+      	es.onmessage = function(e) {
+        	addMessage("Event: " + e.data);
+      	};
+      	es.addEventListener('ota', function(e) {
+        	addMessage("Event[ota]: " + e.data);
+      	}, false);
+
 	}
 
 	// ******************************************************************
@@ -658,6 +767,10 @@ $(function(){
 
 	$("#pane2").on("click", ".btn_load", function() {
 		wsSendCommand('\\');
+	});
+
+	$("#pane4").on("click", ".btn_reboot", function() {
+		wsSendCommand('~');
 	});
 
 	$("#pane2").on("click", ".btn_mode", function() {
@@ -772,7 +885,7 @@ $(function(){
 		wsSetGlitterColor(glitterColorHex);
 	}
 	
-		function setGlitterColor() {
+	function setGlitterColor() {
 
 		var glitter_red = $("#rng_glitter_red").val();
 		var glitter_green = $("#rng_glitter_green").val();
@@ -825,92 +938,92 @@ $(function(){
 	// + google. swiping would be really nice - I will possibly implement it with
 	// jquery later - or never.
 
-	var canvas = document.getElementById("myCanvas");
-	// FIX: Cancel touch end event and handle click via touchstart
-	// canvas.addEventListener("touchend", function(e) { e.preventDefault(); }, false);
-	canvas.addEventListener("touchmove", doTouch, false);
-	canvas.addEventListener("click", doClick, false);
-	//canvas.addEventListener("mousemove", doClick, false);
+// 	var canvas = document.getElementById("myCanvas");
+// 	// FIX: Cancel touch end event and handle click via touchstart
+// 	// canvas.addEventListener("touchend", function(e) { e.preventDefault(); }, false);
+// 	canvas.addEventListener("touchmove", doTouch, false);
+// 	canvas.addEventListener("click", doClick, false);
+// 	//canvas.addEventListener("mousemove", doClick, false);
 
 	
-	var context = canvas.getContext('2d');
-	var centerX = canvas.width / 2;
-	var centerY = canvas.height / 2;
-	var innerRadius = canvas.width / 4.5;
-	var outerRadius = (canvas.width - 10) / 2
+// 	var context = canvas.getContext('2d');
+// 	var centerX = canvas.width / 2;
+// 	var centerY = canvas.height / 2;
+// 	var innerRadius = canvas.width / 4.5;
+// 	var outerRadius = (canvas.width - 10) / 2
 
-	//outer border
-	context.beginPath();
-	//outer circle
-	context.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI, false);
-	//draw the outer border: (gets drawn around the circle!)
-	context.lineWidth = 4;
-	context.strokeStyle = '#000000';
-	context.stroke();
-	context.closePath();
+// 	//outer border
+// 	context.beginPath();
+// 	//outer circle
+// 	context.arc(centerX, centerY, outerRadius, 0, 2 * Math.PI, false);
+// 	//draw the outer border: (gets drawn around the circle!)
+// 	context.lineWidth = 4;
+// 	context.strokeStyle = '#000000';
+// 	context.stroke();
+// 	context.closePath();
 
-	//fill with beautiful colors 
-	//taken from here: http://stackoverflow.com/questions/18265804/building-a-color-wheel-in-html5
-	for(var angle=0; angle<=360; angle+=1) {
-		var startAngle = (angle-2)*Math.PI/180;
-		var endAngle = angle * Math.PI/180;
-		context.beginPath();
-		context.moveTo(centerX, centerY);
-		context.arc(centerX, centerY, outerRadius, startAngle, endAngle, false);
-		context.closePath();
-		context.fillStyle = 'hsl('+angle+', 100%, 50%)';
-		context.fill();
-		context.closePath();
-	}
+// 	//fill with beautiful colors 
+// 	//taken from here: http://stackoverflow.com/questions/18265804/building-a-color-wheel-in-html5
+// 	for(var angle=0; angle<=360; angle+=1) {
+// 		var startAngle = (angle-2)*Math.PI/180;
+// 		var endAngle = angle * Math.PI/180;
+// 		context.beginPath();
+// 		context.moveTo(centerX, centerY);
+// 		context.arc(centerX, centerY, outerRadius, startAngle, endAngle, false);
+// 		context.closePath();
+// 		context.fillStyle = 'hsl('+angle+', 100%, 50%)';
+// 		context.fill();
+// 		context.closePath();
+// 	}
 
-	//inner border
-	context.beginPath();
-	//context.arc(centerX, centerY, radius, startAngle, endAngle, counterClockwise);
-	context.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI, false);
-	//fill the center
-	var my_gradient=context.createLinearGradient(0,0,170,0);
-	my_gradient.addColorStop(0,"black");
-	my_gradient.addColorStop(1,"white");
+// 	//inner border
+// 	context.beginPath();
+// 	//context.arc(centerX, centerY, radius, startAngle, endAngle, counterClockwise);
+// 	context.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI, false);
+// 	//fill the center
+// 	var my_gradient=context.createLinearGradient(0,0,170,0);
+// 	my_gradient.addColorStop(0,"black");
+// 	my_gradient.addColorStop(1,"white");
 	
-	context.fillStyle = my_gradient;
-	context.fillStyle = "white";
-	context.fill();
+// 	context.fillStyle = my_gradient;
+// 	context.fillStyle = "white";
+// 	context.fill();
 
-	//draw the inner line
-	context.lineWidth = 2;
-	context.strokeStyle = '#000000';
-	context.stroke();
-	context.closePath();
+// 	//draw the inner line
+// 	context.lineWidth = 2;
+// 	context.strokeStyle = '#000000';
+// 	context.stroke();
+// 	context.closePath();
 
-	//get Mouse x/y canvas position
-	function getMousePos(canvas, evt) {
-		var rect = canvas.getBoundingClientRect();
-		return {
-			x: evt.clientX - rect.left,
-			y: evt.clientY - rect.top
-		};
-	}
+// 	//get Mouse x/y canvas position
+// 	function getMousePos(canvas, evt) {
+// 		var rect = canvas.getBoundingClientRect();
+// 		return {
+// 			x: evt.clientX - rect.left,
+// 			y: evt.clientY - rect.top
+// 		};
+// 	}
 
-	//comp to Hex
+// 	//comp to Hex
 	function componentToHex(c) {
 		//var hex = c.toString(16);
 		//return hex.length == 1 ? "0" + hex : hex;
 		return  ("0"+(Number(c).toString(16))).slice(-2).toUpperCase();
 	}
 
-	//rgb/rgba to Hex
+  // 	//rgb/rgba to Hex
 	function rgbToHex(rgb) {
 		return componentToHex(rgb[0]) + componentToHex(rgb[1]) + componentToHex(rgb[2]);
 	}
 
-	//display the touch/click position and color info
-	function updateStatus(pos, color) {
-		var hexColor = rgbToHex(color);
-		wsSetAll(hexColor);
-		updateStatusUI(pos, color);
-	}
+// 	//display the touch/click position and color info
+// 	function updateStatus(pos, color) {
+// 		var hexColor = rgbToHex(color);
+// 		wsSetAll(hexColor);
+// 		updateStatusUI(pos, color);
+// 	}
 
-	// Removed from 'updateStatus' function because need a UI update  method without a wsSetAll call.
+// 	// Removed from 'updateStatus' function because need a UI update  method without a wsSetAll call.
 	function updateStatusUI(pos, color) {
 		var hexColor = rgbToHex(color);
 		hexColor = "#" + hexColor;
@@ -921,33 +1034,33 @@ $(function(){
 			$('#status_pos').text("x: " + pos.x + " - y: " + pos.y);		
 	}
 
-	//handle the touch event
-	function doTouch(event) {
-		//to not also fire on click
-		event.preventDefault();
-		var el = event.target;
+// 	//handle the touch event
+// 	function doTouch(event) {
+// 		//to not also fire on click
+// 		event.preventDefault();
+// 		var el = event.target;
 		
-		//touch position
-		var pos = {x: Math.round(event.targetTouches[0].pageX - el.offsetLeft),
-				   y: Math.round(event.targetTouches[0].pageY - el.offsetTop)};
-		//color
-		var color = context.getImageData(pos.x, pos.y, 1, 1).data;
+// 		//touch position
+// 		var pos = {x: Math.round(event.targetTouches[0].pageX - el.offsetLeft),
+// 				   y: Math.round(event.targetTouches[0].pageY - el.offsetTop)};
+// 		//color
+// 		var color = context.getImageData(pos.x, pos.y, 1, 1).data;
 
-		updateStatus(pos, color);
-	}
+// 		updateStatus(pos, color);
+// 	}
 
-	function doClick(event) {   
-		//click position   
-		var pos = getMousePos(canvas, event);
-		//color
-		var color = context.getImageData(pos.x, pos.y, 1, 1).data;
+// 	function doClick(event) {   
+// 		//click position   
+// 		var pos = getMousePos(canvas, event);
+// 		//color
+// 		var color = context.getImageData(pos.x, pos.y, 1, 1).data;
 		
-		//console.log("click", pos.x, pos.y, color);
-		updateStatus(pos, color);
+// 		//console.log("click", pos.x, pos.y, color);
+// 		updateStatus(pos, color);
 		
-		//now do sth with the color rgbToHex(color);
-		//don't do stuff when #000000 (outside circle and lines
-	}
+// 		//now do sth with the color rgbToHex(color);
+// 		//don't do stuff when #000000 (outside circle and lines
+// 	}
 
 	// ******************************************************************
 	// main
