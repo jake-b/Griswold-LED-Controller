@@ -1,6 +1,6 @@
-# Jake's "Griswold" LED controller for Christmas Lights.
+# Jake's "Griswold" LED controller for Christmas Lights v2
 
-I bought 1000 WS2811 nodes for my outdoor Christmas light installation this year.
+I bought 1000 WS2811 nodes for my outdoor Christmas light installation.
 Based on the "Russell's FASTLEDs" project by @russp81, which is in turn based on the "McLighting" project by @toblum
 
 It seemed necessary to name the thing after Clark Griswold, but really just to differentiate this fork from the originals.
@@ -31,8 +31,8 @@ As per the original [McLighting](https://github.com/toblum/McLighting) project, 
 - Palettes stored as binary files on SPIFFS.  See below for more information on this.
 - Display name of the current palette file in the web interface.
 - Added ArduinoOTA support so I can update the firmware over WiFi, which will be important when its installed outside.
-- Added the ability to store the settings in EEPROM and restore on boot.
-- Merged the jscolor interface into the original McLighting interface
+- Added the ability to store the settings in SPIFFS (in json) and restore on boot.
+- Retired the jscolor picker and changed the main color picker to iro.js (https://iro.js.org/colorPicker_api.html)
 - Updated the McLighting interface to retrieve the current settings from the device, and update the UI with the current settings, rather than always default to the defaults.
 - General code formatting clean-up.
 - Added “RemoteDebug” library for serial console over telnet. (Optional #define)
@@ -42,6 +42,13 @@ As per the original [McLighting](https://github.com/toblum/McLighting) project, 
 - Added back the wipe and tv animations from the original McLighting project (removed in LEDLAMP_FASTLEDs)
 - Modified TV animation to add some flicker (I like it better)
 - Added “effect brightness” setting to allow you to dim the main effect independently of glitter.
+- A "fixed range" feature that allows a specific range of pixels to be held constant (with glitter effect).  I use this for a wreath that's attached to the end of a chain that I don't want to be part of the main palette animation.  This is really a quick hack and is only configuratible directly in the json configuration file on SPIFFS.
+- MQTT support so that it can be controlled by Home Assistant.
+
+# Bugs
+It works pretty well and is stable if you don't monkey with it too much once you have it setup.  But it still has some issues.
+- Still some crashes related to websockets I think.
+- Occasional craches
 
 Russell's FASTLEDs:
 https://github.com/russp81/LEDLAMP_FASTLEDs
