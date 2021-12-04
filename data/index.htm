@@ -680,7 +680,7 @@ $(function(){
 			console.log('WebSocket Error ' + error);
 			$('#mc-wsloader').addClass('hide');
 			$('#mc-wserror').removeClass('hide');
-			ws.close();
+			connection.close();
 			reconnect();
 		};
 
