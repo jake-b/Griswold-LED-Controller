@@ -83,6 +83,9 @@ typedef struct {
   uint8_t confetti_dens = 1;  // Density for the confetti effect.  More confetti needed for longer strings.
   bool glitter_wipe_on = false;
   
+  bool fixed_region_enabled = false;
+  uint16_t fixed_region_start = 0;
+  uint16_t fixed_region_length = 0;
   // Formerly, in Griswold-v1 there was some padding and a CRC here.  Not doing that anymore, 
   // because we're using A JSON file stored in SPIFFS instead of a raw struct in the eeprom.
 } SettingsStruct;

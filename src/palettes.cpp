@@ -62,6 +62,10 @@ bool loadPaletteFromFile(int index, CRGBPalette16* palette) {
   }
 
   int paletteFileSize = paletteFile.size();
+  if (paletteFileSize == 0) {
+    Console.println("Unable to load pallete of zero file size.");
+    return false;
+  }
   uint8_t* bytes = new uint8_t[paletteFileSize];
   if (!bytes) {
     Console.println("Unable to allocate memory for palette");

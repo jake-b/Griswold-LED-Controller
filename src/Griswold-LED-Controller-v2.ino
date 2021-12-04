@@ -146,7 +146,7 @@ void setup() {
 
 }
 
-#ifdef GARAGE
+//#ifdef GARAGE
 #define NUM_GLITTER_PARTICLES 3
 #define NUM_GLITTER_FRAMES 2
 int garageGlitterIndex[NUM_GLITTER_PARTICLES];
@@ -165,8 +165,9 @@ int randomNumberNotAlreadyUsed(int base, int range) {
 retry:
       continue;
     }
+    return newRandom;
 }
-#endif
+//#endif
 
 void loop() {  
 
@@ -179,18 +180,20 @@ void loop() {
   if (millis() > nextFrameTime) {
     nextFrameTime = millis() + int(float(1000.0 / settings.fps));
     gHue++;           // slowly cycle the "base color" through the rainbow
-#ifdef GARAGE    
-    if (settings.mode != OFF) {
-      for (int wreath = 434; wreath < settings.numLeds; wreath++) {
-        leds[wreath] = CRGB(settings.main_color.red, settings.main_color.green,
+ 
+    if (settings.mode != OFF && settings.fixed_region_enabled) {
+      for (int r = settings.fixed_region_start; r < settings.fixed_region_start + settings.fixed_region_length; r++) {
+        if (r < settings.numLeds) {
+          leds[r] = CRGB(settings.main_color.red, settings.main_color.green,
                                                  settings.main_color.blue);
+        }
       }
 
       // Calculate some new glitter index
       if (frameCount > NUM_GLITTER_FRAMES) {
         for (int x=0; x<NUM_GLITTER_PARTICLES; x++) {
             if (random8() < settings.glitter_density) {
-              int newGlitterIndex = randomNumberNotAlreadyUsed(434, 50);//434+random16(50);
+              int newGlitterIndex = randomNumberNotAlreadyUsed(settings.fixed_region_start, settings.fixed_region_length);//434+random16(50);
               garageGlitterIndex[x] = newGlitterIndex;
             }
         }
@@ -199,15 +202,18 @@ void loop() {
 
       // Render glitter particles
       for (int x=0; x<NUM_GLITTER_PARTICLES; x++) {
-          leds[garageGlitterIndex[x]] +=
-          CRGB(settings.glitter_color.red, settings.glitter_color.green,
-             settings.glitter_color.blue);
+          if (garageGlitterIndex[x] < settings.numLeds) {
+            leds[garageGlitterIndex[x]] +=
+            CRGB(settings.glitter_color.red, settings.glitter_color.green,
+               settings.glitter_color.blue);
+          }
       }
 
       frameCount++;
    }
-#endif
+
     FastLED.show();   // output the buffer to the LED string.
+    yield();
 
     // Render the next frame
     switch (settings.mode) {

@@ -58,6 +58,9 @@ void loadConfigurationFile(SettingsStruct& destination) {
         intFromJSON(&json, "effect_brightness",     &settingsFromFile.effect_brightness);
         intFromJSON(&json, "confetti_dens",         &settingsFromFile.confetti_dens);
         intFromJSON(&json, "palette_ndx",           &settingsFromFile.palette_ndx);
+        intFromJSON(&json, "fixed_region_enabled",  (uint8_t*)&settingsFromFile.fixed_region_enabled);
+        intFromJSON(&json, "fixed_region_start",    &settingsFromFile.fixed_region_start);
+        intFromJSON(&json, "fixed_region_length",   &settingsFromFile.fixed_region_length);
         destination = settingsFromFile;
     } else {
       Serial.println("failed to load json config");
@@ -95,6 +98,9 @@ void renderConfigurationAsJson(JsonObject& json, SettingsStruct& settingsToRende
   json["effect_brightness"]  = settingsToRender.effect_brightness;
   json["confetti_dens"]      = settingsToRender.confetti_dens;
   json["palette_ndx"]        = settingsToRender.palette_ndx;
+  json["fixed_region_enabled"] = settingsToRender.fixed_region_enabled;
+  json["fixed_region_start"]  = settingsToRender.fixed_region_start;
+  json["fixed_region_length"] = settingsToRender.fixed_region_length;
 }
 
 void printConfiguration(SettingsStruct& settingsToPrint) {
