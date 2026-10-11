@@ -502,8 +502,15 @@ void ChangePalettePeriodically(bool forceNow) {
   if (forceNow || millis() - paletteMillis > (settings.show_length * 1000)) {
     paletteMillis = millis();
 
+    int paletteCount = getPaletteCount();
+    // random(0, 0) and random(0, 1) only ever return 0, and
+    // currentPaletteIndex starts at 0, so this loop never exits.
+    if (paletteCount < 2) {
+      return;
+    }
+
     do {
-      targetPaletteIndex = random(0, getPaletteCount());
+      targetPaletteIndex = random(0, paletteCount);
     } while (targetPaletteIndex == currentPaletteIndex);
     Console.printf("New random target palette index: %d\n", targetPaletteIndex);
     
