@@ -47,10 +47,10 @@ void mount() {
 // Save parameters from the WiFiManager if needed.
 
 void setup() {
-  // Setup Serial
-  // TODO: Remote debugging/logging library
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
+  Serial.println();
+  Serial.print("Reset: ");
+  Serial.println(ESP.getResetInfo());
 
   #ifndef GARAGE
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
@@ -213,8 +213,26 @@ void loop() {
       frameCount++;
    }
 
-    FastLED.show();   // output the buffer to the LED string.
-    yield();
+    // Once OFF has faded and the relay is open, the pixels are unpowered.
+    // Skip the bit-bang so the WiFi stack is not locked out while dark.
+    uint32_t showUs = 0;
+    if (!(settings.mode == OFF && digitalRead(RELAY_PIN) == LOW)) {
+      uint32_t showStart = micros();
+      FastLED.show();
+      showUs = micros() - showStart;
+      // micros() reads a free-running timer, but if it ever stalls inside
+      // the interrupt lock, fall back to the WS2811 bit time (~31us/LED).
+      if (showUs < 50) showUs = (uint32_t)settings.numLeds * 31;
+    }
+    // show() holds interrupts for the whole frame. Leave a matching unlocked
+    // slice afterwards, capped so a long string still moves.
+    uint32_t pauseUs = showUs;
+    if (pauseUs < 1000) pauseUs = 1000;
+    if (pauseUs > 10000) pauseUs = 10000;
+    uint32_t pauseUntil = micros() + pauseUs;
+    while ((int32_t)(pauseUntil - micros()) > 0) {
+      yield();
+    }
 
     // Render the next frame
     switch (settings.mode) {

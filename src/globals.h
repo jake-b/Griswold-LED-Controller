@@ -27,6 +27,15 @@
 
 //#define GARAGE
 
+// For FASTLED
+// Keep interrupts off for the whole WS2811 frame. A WiFi interrupt between
+// pixels stretches the reset gap, the string latches a partial frame, and
+// FastLED retries it. That is the full-string flash. loop() leaves an
+// unlocked window after each show so the radio still runs.
+#ifndef GARAGE
+#define FASTLED_ALLOW_INTERRUPTS 0
+#endif
+
 #include <FastLED.h>
 
 // Standard pins for an old-school original Sonoff
