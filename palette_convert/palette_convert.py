@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 
 # Griswold is a fork of the LEDLAMP project at 
 #         https://github.com/russp81/LEDLAMP_FASTLEDs
@@ -47,13 +47,13 @@ def adjustGamma(orig, gamma):
 infile = sys.argv[1]
 outfile = os.path.splitext(infile)[0] + ".bin"
 
-print "Processing file: " + infile
+print("Processing file: " + infile)
 
 with open(infile) as f:
     content = f.read()
     output_bytes = []
 
-    regex = re.compile('.*\(\s*([0-9]+), *([0-9]+), *([0-9]+)\)\s+([0-9.]+)')
+    regex = re.compile(r'.*\(\s*([0-9]+), *([0-9]+), *([0-9]+)\)\s+([0-9.]+)')
 
     # RGBA Warning
     if content.find("rgba(") != -1:

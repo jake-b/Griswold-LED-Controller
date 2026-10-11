@@ -1,0 +1,15 @@
+*
+   Thanksgiving Gradient
+   Wed Aug 15 23:29:38 2012  
+   http://www.colorzilla.com/gradient-editor/#61f04e+0,6fc12d+11,ffffff+14,ffe094+17,ff6033+89,8b103b+100
+*/
+
+linear-gradient(
+  0deg,
+  rgb(97,240,78)     0%,
+  rgb(255,233,47)    0.4%,
+  rgb(255,233,47)    0.8%,
+  rgb(  8,  8,  8)   12.0%,
+  rgb(252, 94,  8)   50.0%,
+  rgb(247,192, 45)   100%,
+);

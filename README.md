@@ -1,122 +1,74 @@
-# Jake's "Griswold" LED controller for Christmas Lights v2
+# Griswold LED Controller
 
-I bought 1000 WS2811 nodes for my outdoor Christmas light installation.
-Based on the "Russell's FASTLEDs" project by @russp81, which is in turn based on the "McLighting" project by @toblum
+ESP8266 controller for a string of WS2811 or WS2812B lights, with a web interface and MQTT. It is a fork of [Russell's FASTLEDs](https://github.com/russp81/LEDLAMP_FASTLEDs), which is a fork of [McLighting](https://github.com/toblum/McLighting). The name is Clark Griswold's.
 
-It seemed necessary to name the thing after Clark Griswold, but really just to differentiate this fork from the originals.
+The firmware is the PlatformIO project in `src/`. It targets a Wemos D1 mini.
 
-![Clark Griswold](http://i.giphy.com/gB9wIPXav2Ryg.gif)
+## Hardware
 
-@russp81 mixed the work of @toblum with the @FastLED (FastLED library 3.1.3 as of this writing), the colorjs colorpicker, color spectrums created via FastLED Palette Knife, and some additional strip animations.
+- Board: Wemos D1 mini (ESP8266), 160 MHz, 4 MB flash
+- Data: GPIO14
+- Relay: GPIO12, the pinout of an original Sonoff
+- Default build: WS2811, color order RGB
+- Garage install: uncomment `#define GARAGE` in `src/globals.h` for WS2812B, color order GRB
 
-# License
+Interrupts stay off for a whole WS2811 frame. A WiFi interrupt between pixels makes the string latch a partial frame. After each frame, `loop()` leaves an unlocked window so the radio can run.
 
-As per the original [McLighting](https://github.com/toblum/McLighting) project, this project is released under the GNU LESSER GENERAL PUBLIC LICENSE Version 3, 29 June 2007.
+## Build
 
-	Griswold is free software: you can redistribute it and/or modify
-	it under the terms of the GNU Lesser General Public License as 
-	published by the Free Software Foundation, either version 3 of 
-	the License, or (at your option) any later version.
+Clone with the library submodules, then build with PlatformIO:
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+```
+git clone --recursive https://github.com/jake-b/Griswold-LED-Controller.git
+cd Griswold-LED-Controller
+pio run -e d1_mini
+```
 
-	You should have received a copy of the GNU Lesser General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+If the `lib/` directories are empty, run `git submodule update --init`.
 
-# Improvements
+Each build writes `src/build_version.h` with the short git hash and the local time. That file is not committed. The web footer shows both. A `-dirty` suffix means the tree had uncommitted changes when it was compiled.
 
-- Palettes stored as binary files on SPIFFS.  See below for more information on this.
-- Display name of the current palette file in the web interface.
-- Added ArduinoOTA support so I can update the firmware over WiFi, which will be important when its installed outside.
-- Added the ability to store the settings in SPIFFS (in json) and restore on boot.
-- Retired the jscolor picker and changed the main color picker to iro.js (https://iro.js.org/colorPicker_api.html)
-- Updated the McLighting interface to retrieve the current settings from the device, and update the UI with the current settings, rather than always default to the defaults.
-- General code formatting clean-up.
-- Added “RemoteDebug” library for serial console over telnet. (Optional #define)
-- Fixed divide-by-zero error that occurs when fps=0 by preventing fps=0 from the UI.
-- Updates to the “animated palette” function, now you can select a single palette, or the existing randomized palette after time delay.
-- Rearchitected things a bit, now the colormodes.h functions render one single frame, and do not block the main thread.
-- Added back the wipe and tv animations from the original McLighting project (removed in LEDLAMP_FASTLEDs)
-- Modified TV animation to add some flicker (I like it better)
-- Added “effect brightness” setting to allow you to dim the main effect independently of glitter.
-- A "fixed range" feature that allows a specific range of pixels to be held constant (with glitter effect).  I use this for a wreath that's attached to the end of a chain that I don't want to be part of the main palette animation.  This is really a quick hack and is only configuratible directly in the json configuration file on SPIFFS.
-- MQTT support so that it can be controlled by Home Assistant.
+Upload firmware over Arduino OTA. This does not touch the filesystem:
 
-# Bugs
-It works pretty well and is stable if you don't monkey with it too much once you have it setup.  But it still has some issues.
-- Still some crashes related to websockets I think.
-- Occasional craches
+```
+pio run -e d1_mini -t upload --upload-port <device-ip>
+```
 
-Russell's FASTLEDs:
-https://github.com/russp81/LEDLAMP_FASTLEDs
+`upload_flags` in `platformio.ini` pins the OTA callback port. Change it if that port is already in use.
 
-FastLED 3.1.3 library:
-https://github.com/FastLED/FastLED
+## Web interface and settings
 
-McLighting library:
-https://github.com/toblum/McLighting
+On first boot the device opens a WiFi setup portal. Settings are saved in `/config.json` on SPIFFS and loaded again on boot, including the light mode. A reboot restores that saved mode and drives the relay from it.
 
-jscolor Color Picker:
-http://jscolor.com/
+The factory web username and password are `admin` and `admin`. Change them in the configuration. The filesystem editor is at `http://<device>/edit` and uses HTTP digest with those credentials.
 
-FastLED Palette Knife:
-http://fastled.io/tools/paletteknife/
+The page and the palette files live in `data/`. Put individual files on the device through `/edit`. Do not run `pio run -t uploadfs` on a device you have already configured. That command replaces the whole SPIFFS image, including `config.json` and the palettes.
 
-RemoteDebug:
-https://github.com/JoaoLopesF/RemoteDebug
+`/config.json` on the device holds the HTTP and MQTT passwords, and SPIFFS files are served from the web root. Do not commit a copy of that file, and do not expose the device to the public internet.
 
-# Palettes on SPIFFS
+MQTT topics follow the configured topic prefix so Home Assistant can turn the string on and off.
 
-Normally, you use [PaletteKnife](http://fastled.io/tools/paletteknife/) to generate arrays with the palette info.  You then compile this data into your project.  I wanted to be able to update the palettes without recompiling, so I moved them to files in SPIFFS (/palettes directory).  There is a little python program that basically takes the logic from PaletteKnife and outputs a binary file with the palette data instead.  Load these binary files to SPIFFS using the [Arduino ESP8266 filesystem uploader](https://github.com/esp8266/arduino-esp8266fs-plugin) or manually.
+## Palettes
 
-# Portions of @russp81's original README
+PaletteKnife sources are the `.c3g` files in `palettes/`. The files the device loads are the `.bin` files in `data/palettes/`. Convert a source with:
 
-If you aren't familiar with how to setup your ESP8266, see the readme on McLighting's git.  It's well written and should get you up and running.
+```
+python3 palette_convert/palette_convert.py palettes/christmas-candy.c3g
+```
 
-In short you will:
+That writes `palettes/christmas-candy.bin`. Copy the binaries you want into `data/palettes/` and upload those files.
 
-1.  Configure the Arduino IDE to communicate with the ESP8266
-2.  Upload the sketch (from this repo) The sketch is setup for a 240 pixel WS2812B GRB LED Strip.   
-    (change the applicable options in "definitions.h" to your desire)
-3.  On first launch, the ESP8266 will advertise it's own WiFi network for you to connect to, once you connect to it, launch your browser
-    and the web interface is self explanatory.  (If the interface doesn't load, type in "192.168.4.1" into your browser and hit go)
-4.  Once the ESP is on your wifi network, you can then upload the required files for the web interface by typing the in IP address
-    of the ESP followed by "/edit" (i.e. 192.168.1.20/edit).  Then upload the files from the folder labeled "upload these" from this         repo. 
-5.  Once you have finished uploading, type in the IP of the ESP into your browser and you should be up and running!
+## Libraries
 
+`lib/` contains pinned git submodules:
 
-My work was all on adding FastLED (and other tweaks / animations) into the McLighting sketch instead of using Adafruit NeoPixel.
+- [FastLED](https://github.com/FastLED/FastLED) 3.4.0
+- [ArduinoJson](https://github.com/bblanchon/ArduinoJson) 5
+- [ESPAsyncTCP](https://github.com/me-no-dev/ESPAsyncTCP)
+- [ESPAsyncWebServer](https://github.com/arjenhiemstra/ESPAsyncWebServer)
+- [ESPAsyncWiFiManager](https://github.com/alanswx/ESPAsyncWiFiManager)
+- [AsyncMqttClient](https://github.com/marvinroger/async-mqtt-client)
 
-I am a self taught coder who learns by a few books, google, and looking at other's code, 
-and I just liked the things you can do in FastLED better, so I decided to tackle the 
-idea of integrating FastLED into the already awesome work of @toblum.
+## License
 
-I have a limited grasp on the h/w and s/w relationships (do's and don't do's, etc).  
-I edited clockless_esp8266.h (in the FastLED platforms folder) and 
-kept getting flickering until I incremented the WAIT_TIME up to 18us. 
-(also I did "#define FASTLED_INTERRUPT_RETRY_COUNT 3" inside my sketch).
-
-If I disabled interrupts altogether "#define FASTLED_ALLOW_INTERRUPTS 0", the strip would stop flickering but I would get
-what I believe to be "watchdog resets" every 5 to 20 minutes depending on what animation was running, wifi traffic, etc...
-
-For reference, I learned more about the interrupts issue from here:  https://github.com/FastLED/FastLED/issues/306
-
-If anyone can shed more light on this I am all ears!  I'm not sure exactly what the implications are
-for setting the WAIT_TIME = 18us??  Everything appears to function properly, and so far I have not seen 
-a reset in a few hours.
-
-Also, I added a separate color picker from (http://jscolor.com/).  My idea with this is to eventually create
-spectrums using multiple color pickers via the web interface (instead of grinding out coding in the Arduino IDE)
-and eventually animate them as well.  When I am finished with this project, I (we) will hopefully be able to build those
-spectrums, save them to the ESP8266 flash memory, and have a universal routine in the Arduino Sketch that can handle 
-the input / output of the spectrums to the strip (even running animations with them).  I also might even try making a web interface
-to create custom animations from, but that seems like a pretty decent challenge from what I can tell. (I am just now finding my way 
-around in html/css/js so I have A LOT of learning to do!)
-
-I will say again, I'm a rookie who has tinkered around in a little of each major language with no formal education, so 
-if you see something that doesn't look right, it probably isn't!  I am very open to suggestions / learning anything 
-anyone is willing to share.
-
+Griswold is released under the GNU Lesser General Public License v3.0, the same license as McLighting. See [LICENSE](LICENSE).

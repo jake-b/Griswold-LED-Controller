@@ -1,0 +1,14 @@
+*
+   Thanksgiving Gradient
+   Wed Aug 15 23:29:38 2012
+   From http://www.color-hex.com/color-palette/2171
+*/
+
+linear-gradient(
+  0deg,
+  rgb(255,96,51)	  0.000%,
+  rgb(255,147,0)   25.000%,
+  rgb(255,224,148) 50.000%,
+  rgb(111,193,45)  75.000%,
+  rgb(30,130,20)  100.000%,
+  );

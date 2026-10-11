@@ -49,5 +49,15 @@ Temporary Items
 /bugs.txt
 /upload.sh
 
+# PlatformIO build tree and local editor files
+.pio/
+.vscode/
+__pycache__/
+*.pyc
+
 # Written by scripts/build_version.py on each build.
 /src/build_version.h
+
+# Authoring copies. The binaries shipped to SPIFFS are in data/palettes/.
+palettes/*.bin
+palettes/*.c3g_2

@@ -1,0 +1,11 @@
+/*
+   CSS3 gradient
+   cptutils 1.46
+   Wed Aug 15 23:37:38 2012
+*/
+
+linear-gradient(
+  0deg,
+  rgb(255,  0,  0)   0.000%,
+  rgb(183, 26,234) 100.000%
+  );

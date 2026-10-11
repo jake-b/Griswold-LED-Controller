@@ -1,0 +1,18 @@
+[submodule "lib/ArduinoJson"]
+	path = lib/ArduinoJson
+	url = https://github.com/bblanchon/ArduinoJson.git
+[submodule "lib/AsyncMqttClient"]
+	path = lib/AsyncMqttClient
+	url = https://github.com/marvinroger/async-mqtt-client.git
+[submodule "lib/ESPAsyncTCP"]
+	path = lib/ESPAsyncTCP
+	url = https://github.com/me-no-dev/ESPAsyncTCP.git
+[submodule "lib/ESPAsyncWebServer"]
+	path = lib/ESPAsyncWebServer
+	url = https://github.com/arjenhiemstra/ESPAsyncWebServer.git
+[submodule "lib/ESPAsyncWiFiManager"]
+	path = lib/ESPAsyncWiFiManager
+	url = https://github.com/alanswx/ESPAsyncWiFiManager.git
+[submodule "lib/FastLED"]
+	path = lib/FastLED
+	url = https://github.com/FastLED/FastLED.git
