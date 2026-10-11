@@ -26,7 +26,7 @@
 #define CONFIGURATION_H
 
 #include <stdint.h>
-#include <FastLED.h>
+#include <globals.h>
 
 #define CONFIG_FILE_PATH "/config.json"
 
@@ -36,27 +36,27 @@
 #define MAX_TOPIC_LENGTH 12
 #define MAX_HOSTNAME_LENGTH 16
 
-enum MODE { LAST = -1,
-    HOLD = 0,
-    OFF = 1,
-    ALL,
-    MIXEDSHOW,
-    RAINBOW,
-    CONFETTI,
-    SINELON,
-    JUGGLE,
-    BPM,
-    SPARKLE,
-    PALETTE_ANIMS,
-    SPECKLE_PALETTE,
-    RIPPLE,
-    COMET,
-    THEATERCHASE,
-    WIPE,
-    TV,
-    EYES };
-    
 //#pragma pack(push)  // push current alignment to stack
+// enum MODE { LAST = -1,
+//     HOLD = 0,
+//     OFF = 1,
+//     ALL,
+//     MIXEDSHOW,
+//     RAINBOW,
+//     CONFETTI,
+//     SINELON,
+//     JUGGLE,
+//     BPM,
+//     SPARKLE,
+//     PALETTE_ANIMS,
+//     SPECKLE_PALETTE,
+//     RIPPLE,
+//     COMET,
+//     THEATERCHASE,
+//     WIPE,
+//     TV,
+//     EYES };
+    
 //#pragma pack(1)     // set alignment to 1 byte boundary
 typedef struct {
   uint16_t numLeds = 50;

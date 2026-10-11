@@ -4,9 +4,6 @@
 
 // Global stuff
 #include "globals.h"
-
-// For FASTLED
-#include <FastLED.h>
 #include "colormodes.h"
 #include "palettes.h"
 

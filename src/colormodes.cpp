@@ -27,8 +27,6 @@
 #include "colormodes.h"
 #include "palettes.h"
 
-#include <FastLED.h>
-
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 CRGBPalette16 targetPalette = RainbowStripeColors_p;
 

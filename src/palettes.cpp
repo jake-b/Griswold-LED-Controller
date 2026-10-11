@@ -23,7 +23,6 @@
 //        https://github.com/toblum/McLighting
 
 #include <FS.h>
-#include <FastLed.h>
 #include "globals.h"
 //int paletteCount = 0;
 

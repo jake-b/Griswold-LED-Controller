@@ -22,13 +22,12 @@
 // The LEDLAMP project is a fork of the McLighting Project at
 //        https://github.com/toblum/McLighting
 
-#include <FastLED.h>
-#include "configuration.h"
-
 #ifndef __GLOBALS_H__
 #define __GLOBALS_H__
 
 //#define GARAGE
+
+#include <FastLED.h>
 
 // Standard pins for an old-school original Sonoff
 // NOT newer Sonoff basic, which does not break out GPIO14
@@ -48,8 +47,32 @@
 #define WEBSOCKET_PING_TIME_MS 60000
 extern CRGB* leds;
 
+enum MODE { LAST = -1,
+    HOLD = 0,
+    OFF = 1,
+    ALL,
+    MIXEDSHOW,
+    RAINBOW,
+    CONFETTI,
+    SINELON,
+    JUGGLE,
+    BPM,
+    SPARKLE,
+    PALETTE_ANIMS,
+    SPECKLE_PALETTE,
+    RIPPLE,
+    COMET,
+    THEATERCHASE,
+    WIPE,
+    TV,
+    EYES };
+
+ enum DIRECTION {
+  BACK = 0,
+  FORWARD = 1, };   
+
 void init_leds();
-void set_mode(MODE new_mode);
+extern void set_mode(MODE new_mode);
 
 class ConsoleImpl : public Print  {
         public:

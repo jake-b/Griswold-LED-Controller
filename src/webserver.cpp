@@ -1,3 +1,6 @@
+#include "globals.h"
+#include "configuration.h"
+#include "colormodes.h"
 #include "webserver.h"
 #include <Hash.h>
 #include <ESP8266WiFi.h>
@@ -5,8 +8,6 @@
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
-#include "globals.h"
-#include "colormodes.h"
 #include "mqtt.h"
 #include <ESP8266mDNS.h>
 #include <SPIFFSEditor.h>

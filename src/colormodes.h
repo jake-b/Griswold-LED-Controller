@@ -31,9 +31,9 @@
 #define SPARKLE_SPREAD (_max(settings.numLeds/80,3))
 #define WIPE_SPEED  (_max(settings.numLeds/120,1))
 
-enum DIRECTION {
-  BACK = 0,
-  FORWARD = 1, };
+// enum DIRECTION {
+//   BACK = 0,
+//   FORWARD = 1, };
   
 extern uint8_t gHue; // rotating "base color" used by many of the patterns
 

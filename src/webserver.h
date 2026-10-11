@@ -1,3 +1,5 @@
+#include <globals.h>
+#include "configuration.h"
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <DNSServer.h>
