@@ -323,6 +323,11 @@ void loop() {
     }
   } //main frame loop
 
+  // This core's cleanupClients() closes the oldest socket once the
+  // connected count passes the library max (4 on ESP8266).
+  ws.cleanupClients();
+  flushConsoleEvents();
+
   // Handle other processes
   ArduinoOTA.handle();
 }

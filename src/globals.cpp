@@ -53,30 +53,46 @@ void set_mode(MODE new_mode) {
   printStatusJsonToSocketClient(NULL);
 }
 
+// Console is called from MQTT and websocket callbacks, which run inside
+// AsyncTCP. events.send() transmits from that stack and re-enters lwIP.
+// Queue the text here and flush it from loop().
+static const size_t CONSOLE_EVENT_CAP = 480;
+static char consoleEventBuf[CONSOLE_EVENT_CAP];
+static size_t consoleEventLen = 0;
+
+static void queueConsoleEvent(const char* data, size_t len) {
+  if (data == NULL || len == 0) return;
+  size_t room = (CONSOLE_EVENT_CAP - 1) - consoleEventLen;
+  if (room == 0) return;
+  if (len > room) len = room;
+  memcpy(consoleEventBuf + consoleEventLen, data, len);
+  consoleEventLen += len;
+}
+
+void flushConsoleEvents() {
+  if (consoleEventLen == 0) return;
+  char local[CONSOLE_EVENT_CAP];
+  size_t n = consoleEventLen;
+  memcpy(local, consoleEventBuf, n);
+  local[n] = '\0';
+  consoleEventLen = 0;
+  if (events.count() == 0) return;
+  events.send(local);
+}
+
 size_t ConsoleImpl::write(uint8_t character) {
   Serial.println("Character");
-  char buf[2] = {0,0};
-  buf[0]=character;
-  events.send(buf);
+  queueConsoleEvent((const char*)&character, 1);
   return Serial.write(character);
-
 }
 
 size_t ConsoleImpl::write(const char *str) {
   Serial.println("String");
-  events.send(str);
+  if (str != NULL) queueConsoleEvent(str, strlen(str));
   return Serial.write(str);
 }
 
 size_t ConsoleImpl::write(const uint8_t *buffer, size_t size) {
-  //Serial.print("Buffer: '");
-  //Serial.write(buffer,size);
-  //Serial.print("'");
-  //Serial.println(size);
-  char* buf = (char*)malloc(size+1);
-  memcpy(buf, buffer, size);
-  buf[size] = 0;
-  events.send(buf, NULL, millis(), 1000);
-  free(buf);
+  queueConsoleEvent((const char*)buffer, size);
   return Serial.write(buffer, size);
 }

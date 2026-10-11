@@ -86,4 +86,7 @@ class ConsoleImpl : public Print  {
 
 extern ConsoleImpl Console;
 
+// Send queued console lines to /events from loop(), never from a callback.
+void flushConsoleEvents();
+
 #endif
