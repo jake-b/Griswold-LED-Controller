@@ -55,6 +55,17 @@ void confetti() {
   }
 }
 
+void sparkle() {
+  // random colored speckles that blink in and fade smoothly
+  fadeToBlackBy(leds, settings.numLeds, settings.ftb_speed);
+  for (int x=0; x<settings.confetti_dens; x++) {
+    int pos = random16(settings.numLeds);
+    CHSV color = rgb2hsv_approximate( CRGB(settings.main_color.red, settings.main_color.green,
+               settings.main_color.blue) );
+    leds[pos] += color;
+  }
+}
+
 void sinelon() {
   // a colored dot sweeping back and forth, with fading trails
   fadeToBlackBy(leds, settings.numLeds, settings.ftb_speed);
@@ -593,7 +604,7 @@ void init_random_offsets() {
   }
 }
 
-void sparkle() {
+void sparkle2() {
   static uint8_t colorIndex = 0;
   init_random_offsets();
   CHSV color = rgb2hsv_approximate( CRGB(settings.main_color.red, settings.main_color.green,
