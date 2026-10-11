@@ -745,8 +745,9 @@ $(function(){
 				colorPicker.color.rgb = { r: obj.color[0], g: obj.color[1], b: obj.color[2] }
 				$(".palette_name").text(obj.palette_name);
 				$("#switch_glitter_wipe")[0].checked = obj.glitter_wipe_on;
-				if (obj.git || obj.built) {
+				if (obj.version || obj.git || obj.built) {
 					var versionParts = [];
+					if (obj.version) versionParts.push(obj.version);
 					if (obj.git) versionParts.push(obj.git);
 					if (obj.built) versionParts.push(obj.built);
 					$("#build-version").text(versionParts.join("  ·  "));

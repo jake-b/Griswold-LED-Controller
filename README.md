@@ -1,8 +1,8 @@
 # Griswold LED Controller
 
-ESP8266 controller for a string of WS2811 or WS2812B lights, with a web interface and MQTT. It is a fork of [Russell's FASTLEDs](https://github.com/russp81/LEDLAMP_FASTLEDs), which is a fork of [McLighting](https://github.com/toblum/McLighting). The name is Clark Griswold's.
+Version 3. ESP8266 controller for a string of WS2811 or WS2812B lights, with a web interface and MQTT. It is a fork of [Russell's FASTLEDs](https://github.com/russp81/LEDLAMP_FASTLEDs), which is a fork of [McLighting](https://github.com/toblum/McLighting). The name is Clark Griswold's.
 
-The firmware is the PlatformIO project in `src/`. It targets a Wemos D1 mini.
+Version 2 was the async rewrite of the original sketch. This line is the PlatformIO firmware in `src/`, and it targets a Wemos D1 mini.
 
 ## Hardware
 
@@ -26,7 +26,7 @@ pio run -e d1_mini
 
 If the `lib/` directories are empty, run `git submodule update --init`.
 
-Each build writes `src/build_version.h` with the short git hash and the local time. That file is not committed. The web footer shows both. A `-dirty` suffix means the tree had uncommitted changes when it was compiled.
+Each build writes `src/build_version.h` with the short git hash and the local time. That file is not committed. The web footer shows `3.x`, the git hash, and the build time. A `-dirty` suffix means the tree had uncommitted changes when it was compiled.
 
 Upload firmware over Arduino OTA. This does not touch the filesystem:
 

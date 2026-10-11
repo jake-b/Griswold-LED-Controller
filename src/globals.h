@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-// Griswold-v2 is a rewrite of Griswold-1.0 using Async libararies.
+// Griswold v3. v2 was the async rewrite of Griswold 1.0.
 
 // Griswold-v1 is a fork of the LEDLAMP project at 
 //        https://github.com/russp81/LEDLAMP_FASTLEDs
@@ -24,6 +24,9 @@
 
 #ifndef __GLOBALS_H__
 #define __GLOBALS_H__
+
+// Reported in the web footer with the git hash and build time.
+#define GRISWOLD_VERSION "3.x"
 
 //#define GARAGE
 

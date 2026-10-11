@@ -487,6 +487,7 @@ void printStatusJsonToSocketClient(AsyncWebSocketClient* client) {
   StaticJsonBuffer<800> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   root["mode"] = (int)settings.mode;
+  root["version"] = GRISWOLD_VERSION;
   root["git"] = BUILD_GIT_HASH;
   root["built"] = BUILD_DATE;
   root["FPS"] = settings.fps;
