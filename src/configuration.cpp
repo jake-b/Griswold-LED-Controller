@@ -27,10 +27,11 @@ void loadConfigurationFile(SettingsStruct& destination) {
   if (configFile) {
     Serial.println("opened config file");
     size_t size = configFile.size();
-    // Allocate a buffer to store contents of the file.
-    std::unique_ptr<char[]> buf(new char[size]);
+    // ArduinoJson 5 reads until a NUL. The file itself has none.
+    std::unique_ptr<char[]> buf(new char[size + 1]);
 
     configFile.readBytes(buf.get(), size);
+    buf[size] = '\0';
     DynamicJsonBuffer jsonBuffer;
     JsonObject& json = jsonBuffer.parseObject(buf.get());
     json.printTo(Serial);
