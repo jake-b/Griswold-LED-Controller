@@ -9,6 +9,7 @@
 #include <DNSServer.h>
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 #include "mqtt.h"
+#include "build_version.h"
 #include <ESP8266mDNS.h>
 #include <SPIFFSEditor.h>
 #include <ESPAsyncWiFiManager.h> //https://github.com/alanswx/ESPAsyncWiFiManager
@@ -483,9 +484,11 @@ void handleWebSocketCommand(char* payload, size_t length, AsyncWebSocketClient* 
 }
 
 void printStatusJsonToSocketClient(AsyncWebSocketClient* client) {
-  StaticJsonBuffer<500> jsonBuffer;
+  StaticJsonBuffer<800> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   root["mode"] = (int)settings.mode;
+  root["git"] = BUILD_GIT_HASH;
+  root["built"] = BUILD_DATE;
   root["FPS"] = settings.fps;
   root["show_length"] = settings.show_length;
   root["ftb_speed"] = settings.ftb_speed;

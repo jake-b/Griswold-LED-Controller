@@ -506,7 +506,9 @@
 
 		<footer class="page-footer">
 			<div class="footer-copyright">
-				<div class="container">© 2016
+				<div class="container">
+					<span id="build-version" class="grey-text text-lighten-4"></span>
+					© 2016
 					<div class="right"> 
 						<a class="grey-text text-lighten-4" href="https://github.com/toblum/McLighting">McLighting Project home</a> &bull; 
 						<a class="grey-text text-lighten-4" href="https://github.com/russp81/LEDLAMP_FASTLEDs">LEDLAMP Project home</a> &bull; 
@@ -519,6 +521,14 @@
 		<style type="text/css">
 			.btn_grid {
 				margin: 7px 0;
+			}
+			footer.page-footer .footer-copyright {
+				height: auto;
+				line-height: 20px;
+				padding: 10px 0;
+			}
+			#build-version {
+				display: block;
 			}
 		</style>
 	
@@ -735,6 +745,12 @@ $(function(){
 				colorPicker.color.rgb = { r: obj.color[0], g: obj.color[1], b: obj.color[2] }
 				$(".palette_name").text(obj.palette_name);
 				$("#switch_glitter_wipe")[0].checked = obj.glitter_wipe_on;
+				if (obj.git || obj.built) {
+					var versionParts = [];
+					if (obj.git) versionParts.push(obj.git);
+					if (obj.built) versionParts.push(obj.built);
+					$("#build-version").text(versionParts.join("  ·  "));
+				}
 			} else if (e.data.charAt(0) == 'p') {
 				console.log('Palette name message: \'' + e.data + '\'');
 				$(".palette_name").text(e.data.substring(1));

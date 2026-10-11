@@ -48,3 +48,6 @@ Temporary Items
 /pio.txt
 /bugs.txt
 /upload.sh
+
+# Written by scripts/build_version.py on each build.
+/src/build_version.h
