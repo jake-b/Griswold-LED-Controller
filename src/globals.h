@@ -28,14 +28,17 @@
 #ifndef __GLOBALS_H__
 #define __GLOBALS_H__
 
+//#define GARAGE
+
+// Standard pins for an old-school original Sonoff
+// NOT newer Sonoff basic, which does not break out GPIO14
 #define DATA_PIN 14
 #define RELAY_PIN 12
 
-#define GARAGE
-
 #ifdef GARAGE
-//#define LED_TYPE WS2812B // 2019 production value
-#define LED_TYPE WS2812
+#define LED_TYPE WS2812B // 2019 production value
+//#define LED_TYPE WS2811 // long shot
+//#define LED_TYPE WS2812
 #define COLOR_ORDER GRB
 #else
 #define LED_TYPE WS2811

@@ -55,6 +55,10 @@ void setup() {
   Serial.begin(115200);
   Serial.setDebugOutput(true);
 
+  #ifndef GARAGE
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  #endif
+
   // Setup the RELAY output
 
   // setup the relay
