@@ -30,6 +30,11 @@
 uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 CRGBPalette16 targetPalette = RainbowStripeColors_p;
 
+// beatsin16(bpm, 0, numLeds) returns numLeds at the peak (SCALE8_FIXED).
+static uint16_t lastPixelIndex() {
+  return settings.numLeds > 0 ? settings.numLeds - 1 : 0;
+}
+
 void addGlitter(fract8 chanceOfGlitter) {
   for (int x=0; x<10; x++) {
     if (random8() < chanceOfGlitter) {
@@ -69,7 +74,7 @@ void sparkle() {
 void sinelon() {
   // a colored dot sweeping back and forth, with fading trails
   fadeToBlackBy(leds, settings.numLeds, settings.ftb_speed);
-  int pos = beatsin16(13, 0, settings.numLeds);
+  int pos = beatsin16(13, 0, lastPixelIndex());
   leds[pos] += CHSV(gHue, 255, settings.effect_brightness);
 }
 
@@ -78,7 +83,7 @@ void juggle() {
   fadeToBlackBy(leds, settings.numLeds, settings.ftb_speed);
   int dothue = 0;
   for (int i = 0; i < 8; i++) {
-    leds[beatsin16(i + 7, 0, settings.numLeds)] |=
+    leds[beatsin16(i + 7, 0, lastPixelIndex())] |=
         CHSV(dothue, 200, settings.effect_brightness);
     dothue += 32;
   }
@@ -185,7 +190,7 @@ int lead_dot = 0;
 
 void comet() {
   fadeToBlackBy(leds, settings.numLeds, settings.ftb_speed);
-  lead_dot = beatsin16(int(float(settings.fps / 3)), 0, settings.numLeds);
+  lead_dot = beatsin16(int(float(settings.fps / 3)), 0, lastPixelIndex());
   leds[lead_dot] = CHSV(dothue, 200, 255);
   dothue += 8;
 }
