@@ -16,6 +16,19 @@
 // Webserver handlers
 #include "webserver.h"
 
+// SDK internals. There is no public wrapper. wDevDisableRx clears the MAC
+// receive-enable bit and wDevEnableRx sets it again.
+//
+// show() locks out the WiFi task for the whole string. 800 WS2811s is about
+// 25ms, and the WiFi NMI still runs during that lock. If the NMI starts a
+// transmit whose buffer pointer is null, it prints dev 1163 and spins at
+// wDev_ProcessFiq until the hardware watchdog resets (flag 1). Gating
+// receive for the bit-bang keeps the MAC from starting that work.
+extern "C" {
+  void wDevDisableRx(void);
+  void wDevEnableRx(void);
+}
+
 // SKETCH BEGIN
 // For managing WiFi disconnects
 WiFiEventHandler wifiConnectHandler;
@@ -230,9 +243,12 @@ void loop() {
     // Skip the bit-bang so the WiFi stack is not locked out while dark.
     uint32_t showUs = 0;
     if (!(settings.mode == OFF && digitalRead(RELAY_PIN) == LOW)) {
+      yield();
+      wDevDisableRx();
       uint32_t showStart = micros();
       FastLED.show();
       showUs = micros() - showStart;
+      wDevEnableRx();
       // micros() reads a free-running timer, but if it ever stalls inside
       // the interrupt lock, fall back to the WS2811 bit time (~31us/LED).
       if (showUs < 50) showUs = (uint32_t)settings.numLeds * 31;
