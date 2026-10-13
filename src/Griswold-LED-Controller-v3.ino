@@ -26,8 +26,22 @@ void connectToWifi() {
   Console.println("Disconnected from Wi-Fi...");
 }
 
+#ifndef GARAGE
+// Modem sleep sends a null frame from pm_send_nullfunc. If the management
+// buffer pool is empty, that function asserts and spins at a jump-to-self
+// until the software watchdog resets. show() holds interrupts for the whole
+// WS2811 frame, which is what empties the pool. The SDK restores modem sleep
+// when the station starts, so the sleep type has to be set again after connect.
+static void keepRadioAwake() {
+  WiFi.setSleepMode(WIFI_NONE_SLEEP);
+}
+#endif
+
 void onWifiConnect(const WiFiEventStationModeGotIP& event) {
   Console.println("Connected to Wi-Fi.");
+  #ifndef GARAGE
+  keepRadioAwake();
+  #endif
   connectToMqtt();
 }
 
@@ -51,10 +65,6 @@ void setup() {
   Serial.println();
   Serial.print("Reset: ");
   Serial.println(ESP.getResetInfo());
-
-  #ifndef GARAGE
-  WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  #endif
 
   // Setup the RELAY output
 
@@ -103,6 +113,9 @@ void setup() {
   mqttInit();
    
   initWifiManager();
+  #ifndef GARAGE
+  keepRadioAwake();
+  #endif
 
   //Send OTA events to the browser
   ArduinoOTA.onStart([]() {
