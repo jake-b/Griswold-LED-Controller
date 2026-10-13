@@ -499,7 +499,12 @@
 				<a class="btn waves-effect waves-light btn_reboot" name="action">Reboot
 					<i class="material-icons right">send</i>
 				</a>
-			</div>		
+			</div>
+			<div class="col s12 m6 l3 btn_grid">
+				<a class="btn waves-effect waves-light grey btn_clear_reset_log" role="button">Clear reset log</a>
+			</div>
+			<div class="grey-text">Last resets</div>
+			<pre id="reset-log" style="white-space:pre-wrap;font-size:13px;line-height:1.3;"></pre>
 		    <div style="" id="console">
 			</div>
 		</div>
@@ -629,6 +634,16 @@ $(function(){
       var msg = $('<div></div>').append(m).appendTo("#console");
     }
 
+	function loadResetLog() {
+		$.ajax({
+			url: "/reset.log",
+			cache: false,
+			dataType: "text",
+			success: function(text) { $("#reset-log").text(text); },
+			error: function() { $("#reset-log").text("No reset log."); }
+		});
+	}
+
 	function showPane(pane) {
 		$('.mc_pane').addClass('hide');
 		$('#' + pane).removeClass('hide');
@@ -642,6 +657,10 @@ $(function(){
 		// if (pane == "pane3") {
 		// 	$('#jscolor_picker')[0].jscolor.show();
 		// }
+
+		if (pane == "pane4") {
+			loadResetLog();
+		}
 
 		if (pane != 'pane0') {
 			last_pane = pane;
@@ -800,6 +819,16 @@ $(function(){
 
 	$("#pane4").on("click", ".btn_reboot", function() {
 		wsSendCommand('~');
+	});
+
+	$("#pane4").on("click", ".btn_clear_reset_log", function() {
+		$.ajax({
+			url: "/clearResetLog",
+			method: "POST",
+			cache: false,
+			success: function() { loadResetLog(); },
+			error: function() { $("#reset-log").text("Could not clear the reset log."); }
+		});
 	});
 
 	$("#pane2").on("click", ".btn_mode", function() {

@@ -13,6 +13,7 @@
 #include <ESP8266mDNS.h>
 #include <SPIFFSEditor.h>
 #include <ESPAsyncWiFiManager.h> //https://github.com/alanswx/ESPAsyncWiFiManager
+#include <FS.h>
 
 
 AsyncWebServer server(80);
@@ -89,6 +90,19 @@ void init_httpd() {
     AsyncWiFiManager wifiManager(&server, &dns);
     wifiManager.resetSettings();
     request->send(200, "text/plain", "Settings.reset");
+  });
+
+  // Replace the reset log with one sentinel line. Later boots append after
+  // it, so anything below this line happened after the clear.
+  server.on("/clearResetLog", HTTP_POST, [](AsyncWebServerRequest * request) {
+    fs::File out = SPIFFS.open("/reset.log", "w");
+    if (!out) {
+      request->send(500, "text/plain", "reset log write failed");
+      return;
+    }
+    out.println("Log reset");
+    out.close();
+    request->send(200, "text/plain", "Log reset\n");
   });
 
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");

@@ -63,12 +63,77 @@ void onWifiDisconnect(const WiFiEventStationModeDisconnected& event) {
   mqttCancelReconnectTimer(); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
 }
 
-void mount() {
+bool mount() {
   if (SPIFFS.begin()) {
     Serial.println("mounted file system");
-  } else {
-    Serial.println("failed to mount FS");
+    return true;
   }
+  Serial.println("failed to mount FS");
+  return false;
+}
+
+// Keep the last few reset reasons. Serial output is lost when nothing is
+// connected, and a growing log would crowd out config and palettes.
+static void logResetReason(const String& info) {
+  const char *path = "/reset.log";
+  const int keepLines = 7;
+  const size_t cap = 768;
+  char buf[cap];
+  size_t n = 0;
+  bool partial = false;
+
+  File in = SPIFFS.open(path, "r");
+  if (in) {
+    size_t sz = in.size();
+    if (sz > cap - 1) {
+      in.seek(sz - (cap - 1), SeekSet);
+      partial = true;
+    }
+    n = in.readBytes(buf, cap - 1);
+    in.close();
+  }
+  buf[n] = '\0';
+
+  char *start = buf;
+  if (partial) {
+    char *nl = strchr(start, '\n');
+    start = nl ? nl + 1 : buf + n;
+  }
+
+  int lines = 0;
+  for (char *p = start; *p; p++) {
+    if (*p == '\n') lines++;
+  }
+  size_t startLen = strlen(start);
+  if (startLen > 0 && start[startLen - 1] != '\n') lines++;
+  while (lines > keepLines) {
+    char *nl = strchr(start, '\n');
+    if (!nl) break;
+    start = nl + 1;
+    lines--;
+  }
+
+  char line[180];
+  size_t w = 0;
+  for (unsigned i = 0; i < info.length() && w + 1 < sizeof(line); i++) {
+    char c = info[i];
+    if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+    line[w++] = c;
+  }
+  line[w] = '\0';
+
+  File out = SPIFFS.open(path, "w");
+  if (!out) {
+    Serial.println("reset log write failed");
+    return;
+  }
+  if (*start) {
+    out.print(start);
+    startLen = strlen(start);
+    if (start[startLen - 1] != '\n') out.print('\n');
+  }
+  out.println(line);
+  out.close();
 }
 
 // Save parameters from the WiFiManager if needed.
@@ -76,8 +141,9 @@ void mount() {
 void setup() {
   Serial.begin(115200);
   Serial.println();
+  String resetInfo = ESP.getResetInfo();
   Serial.print("Reset: ");
-  Serial.println(ESP.getResetInfo());
+  Serial.println(resetInfo);
 
   // Setup the RELAY output
 
@@ -96,7 +162,9 @@ void setup() {
   randomSeed(analogRead(0));
 
   // Mount the filesystem and load the configuration (if present)
-  mount();
+  if (mount()) {
+    logResetReason(resetInfo);
+  }
   loadConfigurationFile(settings); 
   Console.print("Settings initialized on boot: ");
   printConfiguration(settings);

@@ -46,6 +46,8 @@ The page and the palette files live in `data/`. Put individual files on the devi
 
 `/config.json` on the device holds the HTTP and MQTT passwords, and SPIFFS files are served from the web root. Do not commit a copy of that file, and do not expose the device to the public internet.
 
+Each boot appends the reset reason to `/reset.log` and keeps the last eight lines. The Console page shows that file. It is the record of a crash when nothing is attached to serial. Clear reset log replaces the file with a `Log reset` line so later entries are new.
+
 MQTT topics follow the configured topic prefix so Home Assistant can turn the string on and off.
 
 ## Palettes
