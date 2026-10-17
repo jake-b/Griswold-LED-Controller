@@ -691,9 +691,26 @@ $(function(){
 	// 	wsSetAll(mainColorHex);
 	// }
 
+	var reconnectTimer = null;
 	function connect() {
 		console.log("Connection websockets to:", ws_url);
 		ws_waiting = 0;
+		// onerror used to close the socket and also schedule a reconnect, and
+		// onclose scheduled another. Each attempt also left the previous
+		// EventSource open. Those piled up sockets until the controller reset.
+		if (reconnectTimer) {
+			clearTimeout(reconnectTimer);
+			reconnectTimer = null;
+		}
+		if (connection) {
+			connection.onclose = null;
+			connection.onerror = null;
+			connection.close();
+		}
+		if (es) {
+			es.close();
+			es = null;
+		}
 		connection = new WebSocket(ws_url, ['arduino']);
 
 		// When the connection is open, send some data to the server
@@ -710,19 +727,20 @@ $(function(){
 
 		// Reconnect logic
 		function reconnect() {
-    		setTimeout(function() {
+			if (reconnectTimer) return;
+    		reconnectTimer = setTimeout(function() {
+				reconnectTimer = null;
       			connect();
-    		}, 1000)
+    		}, 1000);
     		showPane('pane0');
 		}
 
-		// Log errors
+		// Log errors. close() delivers onclose, which is the one reconnect path.
 		connection.onerror = function (error) {
 			console.log('WebSocket Error ' + error);
 			$('#mc-wsloader').addClass('hide');
 			$('#mc-wserror').removeClass('hide');
 			connection.close();
-			reconnect();
 		};
 
 		connection.onclose = function(e) {
