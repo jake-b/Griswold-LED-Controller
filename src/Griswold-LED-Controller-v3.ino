@@ -47,6 +47,10 @@ void connectToWifi() {
 // when the station starts, so the sleep type has to be set again after connect.
 static void keepRadioAwake() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
+  // Default is on. In NULL mode (a dropped station) the SDK still tries to
+  // send a sleep null-frame. If the management pool is empty, pm_send_nullfunc
+  // asserts and spins until the software watchdog resets.
+  wifi_fpm_auto_sleep_set_in_null_mode(0);
 }
 #endif
 
