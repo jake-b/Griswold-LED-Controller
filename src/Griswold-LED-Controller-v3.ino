@@ -274,7 +274,12 @@ void loop() {
   static int nextWsPingTime = 0;
   if (millis() > nextWsPingTime) {
     nextWsPingTime = millis() + WEBSOCKET_PING_TIME_MS;
-    ws.pingAll();
+    // A stalled client keeps every ping. Drop the oldest extra socket before
+    // asking the rest to answer, and skip the ping while the heap is low.
+    if (ESP.getFreeHeap() < 12000)
+      ws.cleanupClients(1);
+    else
+      ws.pingAll();
   }
   if (millis() > nextFrameTime) {
     nextFrameTime = millis() + int(float(1000.0 / settings.fps));
