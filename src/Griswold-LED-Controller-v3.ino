@@ -40,16 +40,15 @@ void connectToWifi() {
 }
 
 #ifndef GARAGE
-// Modem sleep sends a null frame from pm_send_nullfunc. If the management
-// buffer pool is empty, that function asserts and spins at a jump-to-self
-// until the software watchdog resets. show() holds interrupts for the whole
-// WS2811 frame, which is what empties the pool. The SDK restores modem sleep
-// when the station starts, so the sleep type has to be set again after connect.
+// The SDK turns modem sleep back on when the station starts, and a dropped
+// station still sends a sleep null-frame unless NULL-mode auto-sleep is off.
+// Neither of those stops pm_send_nullfunc. An empty management pool makes
+// that send fail. show() holds interrupts for the whole frame, which is what
+// empties the pool. scripts/patch_pm_nullfunc.py and pm_nullfunc_fail.S
+// return from that failure without letting pm_suspend record the frame as
+// sent. Recording it turns the radio off while loop() keeps running.
 static void keepRadioAwake() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
-  // Default is on. In NULL mode (a dropped station) the SDK still tries to
-  // send a sleep null-frame. If the management pool is empty, pm_send_nullfunc
-  // asserts and spins until the software watchdog resets.
   wifi_fpm_auto_sleep_set_in_null_mode(0);
 }
 #endif
