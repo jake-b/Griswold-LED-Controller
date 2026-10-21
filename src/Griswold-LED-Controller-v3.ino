@@ -1,6 +1,7 @@
 // OTA and Filesystem
 #include <ArduinoOTA.h>
 #include <FS.h>
+#include <user_interface.h>
 
 // Global stuff
 #include "globals.h"
@@ -45,8 +46,8 @@ void connectToWifi() {
 // Neither of those stops pm_send_nullfunc. An empty management pool makes
 // that send fail. show() holds interrupts for the whole frame, which is what
 // empties the pool. scripts/patch_pm_nullfunc.py and pm_nullfunc_fail.S
-// return from that failure without letting pm_suspend record the frame as
-// sent. Recording it turns the radio off while loop() keeps running.
+// restart when that happens. Returning would let the SDK wait in light sleep
+// with the watchdog stopped: the last frame stays lit and Wi-Fi stays down.
 static void keepRadioAwake() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   wifi_fpm_auto_sleep_set_in_null_mode(0);
@@ -77,6 +78,18 @@ bool mount() {
 
 // Keep the last few reset reasons. Serial output is lost when nothing is
 // connected, and a growing log would crowd out config and palettes.
+// RTC user word 120, absolute word 184. pm_nullfunc_fail.S stores 0x6e31
+// here before system_restart(). Soft restart only; a power cycle must not
+// inherit a stale marker.
+static const uint32_t kNullFrameMagic = 0x6e31;
+static volatile uint32_t* const kNullFrameSlot = (volatile uint32_t*)0x600014e0;
+
+static bool takeNullFrameRestart() {
+  bool hit = (*kNullFrameSlot == kNullFrameMagic);
+  *kNullFrameSlot = 0;
+  return hit && system_get_rst_info()->reason == REASON_SOFT_RESTART;
+}
+
 static void logResetReason(const String& info) {
   const char *path = "/reset.log";
   const int keepLines = 7;
@@ -144,7 +157,8 @@ static void logResetReason(const String& info) {
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  String resetInfo = ESP.getResetInfo();
+  String resetInfo = takeNullFrameRestart() ? String("Null frame restart")
+                                            : ESP.getResetInfo();
   Serial.print("Reset: ");
   Serial.println(resetInfo);
 

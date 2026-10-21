@@ -2,8 +2,9 @@
 # itself when ieee80211_getmgtframe cannot allocate a management buffer.
 # The software watchdog resets from that spin. Returning straight to the
 # caller is worse: two sites in pm_suspend then mark the null frame as sent,
-# the radio waits for a TX completion that never happens, and the station
-# stays off until a power cycle while the LED loop keeps running.
+# and the radio waits for a TX completion that never happens. Skipping those
+# stores is also worse: the state machine enters light sleep, stops the
+# watchdog, and never wakes. griswold_nullfunc_fail restarts instead.
 #
 # Replace that jump with a call0 to griswold_nullfunc_fail. A send that got a
 # buffer does not reach it. The patched object is linked ahead of -lpp.
