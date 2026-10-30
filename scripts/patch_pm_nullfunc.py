@@ -4,7 +4,8 @@
 # caller is worse: two sites in pm_suspend then mark the null frame as sent,
 # and the radio waits for a TX completion that never happens. Skipping those
 # stores is also worse: the state machine enters light sleep, stops the
-# watchdog, and never wakes. griswold_nullfunc_fail restarts instead.
+# watchdog, and never wakes. griswold_nullfunc_fail calls
+# system_restart_local. system_restart only arms a timer and returns.
 #
 # Replace that jump with a call0 to griswold_nullfunc_fail. A send that got a
 # buffer does not reach it. The patched object is linked ahead of -lpp.

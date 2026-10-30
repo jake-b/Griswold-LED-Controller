@@ -46,8 +46,10 @@ void connectToWifi() {
 // Neither of those stops pm_send_nullfunc. An empty management pool makes
 // that send fail. show() holds interrupts for the whole frame, which is what
 // empties the pool. scripts/patch_pm_nullfunc.py and pm_nullfunc_fail.S
-// restart when that happens. Returning would let the SDK wait in light sleep
-// with the watchdog stopped: the last frame stays lit and Wi-Fi stays down.
+// call system_restart_local when that happens. system_restart only arms a
+// timer and returns here, so that timer never runs. Falling back into
+// pm_suspend lets the SDK wait in light sleep with the watchdog stopped:
+// the last frame stays lit and Wi-Fi stays down.
 static void keepRadioAwake() {
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   wifi_fpm_auto_sleep_set_in_null_mode(0);
