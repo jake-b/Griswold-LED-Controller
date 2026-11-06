@@ -1,6 +1,7 @@
 // OTA and Filesystem
 #include <ArduinoOTA.h>
 #include <FS.h>
+#include <ping.h>
 #include <user_interface.h>
 
 // Global stuff
@@ -58,6 +59,7 @@ static void keepRadioAwake() {
 
 void onWifiConnect(const WiFiEventStationModeGotIP& event) {
   Console.println("Connected to Wi-Fi.");
+  wifi_station_set_reconnect_policy(true);
   #ifndef GARAGE
   keepRadioAwake();
   #endif
@@ -80,16 +82,167 @@ bool mount() {
 
 // Keep the last few reset reasons. Serial output is lost when nothing is
 // connected, and a growing log would crowd out config and palettes.
-// RTC user word 120, absolute word 184. pm_nullfunc_fail.S stores 0x6e31
-// here before system_restart(). Soft restart only; a power cycle must not
-// inherit a stale marker.
+// RTC user word 120, absolute word 184. system_rtc_mem word 0 is at
+// 0x60001100, so this word is 0x600013e0. That is past the 32-word eboot
+// command and still inside the retained user window, which ends at
+// 0x600013ff. 0x600014e0 is outside it, so a marker there never came back.
+// pm_nullfunc_fail.S stores 0x6e31 here. The stall watchdog stores 0x6e32
+// or 0x6e33. Soft restart only; a power cycle must not inherit a stale marker.
 static const uint32_t kNullFrameMagic = 0x6e31;
-static volatile uint32_t* const kNullFrameSlot = (volatile uint32_t*)0x600014e0;
+static const uint32_t kWifiLinkMagic = 0x6e32;
+static const uint32_t kWifiEchoMagic = 0x6e33;
+static volatile uint32_t* const kNullFrameSlot = (volatile uint32_t*)0x600013e0;
 
-static bool takeNullFrameRestart() {
-  bool hit = (*kNullFrameSlot == kNullFrameMagic);
+// A minute lets a roam or a DHCP retry finish. Each echo round is three
+// requests, a second apart, and a round fails only when none come back.
+// Three failed rounds is still about a minute, after the gateway has
+// already answered once. One reply lost while show() has RX off does not
+// count: the MAC is deaf for the whole WS2811 frame.
+static const uint32_t kLinkDownRestartMs = 60000;
+static const uint32_t kProbeEveryMs = 20000;
+static const uint32_t kProbeGiveUpMs = 12000;
+static const uint8_t kProbeFailLimit = 3;
+
+static bool wifiDown = false;
+static uint32_t wifiDownAt = 0;
+static uint32_t lastProbeMs = 0;
+static uint32_t probeStartedMs = 0;
+static volatile bool probeBusy = false;
+static volatile bool probeGotReply = false;
+static volatile bool gatewayAnswers = false;
+static volatile uint8_t probeFails = 0;
+static volatile bool otaBusy = false;
+
+static String markedResetInfo() {
+  uint32_t mark = *kNullFrameSlot;
   *kNullFrameSlot = 0;
-  return hit && system_get_rst_info()->reason == REASON_SOFT_RESTART;
+  if (system_get_rst_info()->reason == REASON_SOFT_RESTART) {
+    if (mark == kNullFrameMagic) return String("Null frame restart");
+    if (mark == kWifiLinkMagic) return String("WiFi link restart");
+    if (mark == kWifiEchoMagic) return String("WiFi echo restart");
+  }
+  return ESP.getResetInfo();
+}
+
+// GOT_IP with RSSI 31 is the SDK's "no beacon" value left next to a stale
+// station record. Treat that the same as having no address.
+static bool stationLinked() {
+  if (wifi_station_get_connect_status() != STATION_GOT_IP)
+    return false;
+  return wifi_station_get_rssi() != 31;
+}
+
+// system_restart() only arms a timer. That timer runs from this loop task.
+// The null-frame path cannot use it, because that path is the Wi-Fi task.
+// Clear RTC word 0 first so a stored exception or watchdog reason cannot
+// hide this restart. The marker above is a different word.
+static void restartMarked(uint32_t magic) {
+  *kNullFrameSlot = magic;
+  uint32_t zero = 0;
+  system_rtc_mem_write(0, &zero, sizeof(zero));
+  Serial.println(magic == kWifiEchoMagic ? "WiFi echo restart" : "WiFi link restart");
+  ESP.restart();
+  while (true)
+    delay(50);
+}
+
+// The SDK ping callbacks run on the Wi-Fi task. Flags only; loop() restarts.
+// These stay C++ functions. The sketch prototype generator gives them C++
+// linkage, and a later extern "C" definition will not compile.
+static void onProbeRecv(void* arg, void* pdata) {
+  (void)arg;
+  const ping_resp* resp = (const ping_resp*)pdata;
+  if (resp && resp->ping_err == 0)
+    probeGotReply = true;
+}
+
+static void onProbeDone(void* arg, void* pdata) {
+  (void)arg;
+  (void)pdata;
+  // A late callback after the give-up path already counted this round.
+  if (!probeBusy)
+    return;
+  // The SDK's done record reports ping_err 0 even when every echo timed
+  // out. Only a recv callback with ping_err 0 means the gateway answered.
+  bool ok = probeGotReply;
+  probeGotReply = false;
+  probeBusy = false;
+  if (ok) {
+    gatewayAnswers = true;
+    probeFails = 0;
+  } else if (gatewayAnswers && probeFails < 255) {
+    probeFails++;
+  }
+}
+
+static void startGatewayProbe(uint32_t now) {
+  lastProbeMs = now;
+  if (ESP.getFreeHeap() < 12000)
+    return;
+  IPAddress gw = WiFi.gatewayIP();
+  if (gw == IPAddress(0, 0, 0, 0))
+    return;
+
+  static ping_option probe;
+  memset(&probe, 0, sizeof(probe));
+  probe.count = 3;
+  probe.ip = (uint32_t)gw;
+  probe.coarse_time = 1;
+  probe.recv_function = reinterpret_cast<ping_recv_function>(onProbeRecv);
+  probe.sent_function = reinterpret_cast<ping_sent_function>(onProbeDone);
+  probeGotReply = false;
+  probeBusy = true;
+  probeStartedMs = now;
+  if (!ping_start(&probe))
+    probeBusy = false;
+}
+
+// The November stall kept painting frames, so the software watchdog never
+// fired and the null-frame handler never ran. The station was simply gone.
+// If the association drops, kick it once and restart after a minute. If the
+// station record stays up but the gateway stops answering, the radio is the
+// same kind of stuck: restart from here. Echo failures count only after one
+// real answer, so a gateway that never replies to ICMP cannot reboot us.
+static void pollWifiStall() {
+  uint32_t now = millis();
+  if (stationLinked()) {
+    wifiDown = false;
+    // ping_start's callbacks run on the Wi-Fi task. If they never arrive,
+    // leave the round so the next probe can run.
+    if (probeBusy && (uint32_t)(now - probeStartedMs) >= kProbeGiveUpMs) {
+      probeBusy = false;
+      probeGotReply = false;
+      if (gatewayAnswers && probeFails < 255)
+        probeFails++;
+    }
+    if (!otaBusy && !probeBusy && gatewayAnswers && probeFails >= kProbeFailLimit)
+      restartMarked(kWifiEchoMagic);
+    if (!otaBusy && !probeBusy && (uint32_t)(now - lastProbeMs) >= kProbeEveryMs)
+      startGatewayProbe(now);
+    return;
+  }
+
+  if (!wifiDown) {
+    wifiDown = true;
+    wifiDownAt = now;
+    wifi_station_set_reconnect_policy(true);
+    station_status_t st = wifi_station_get_connect_status();
+    if (st == STATION_IDLE || st == STATION_NO_AP_FOUND ||
+        st == STATION_CONNECT_FAIL || st == STATION_WRONG_PASSWORD)
+      wifi_station_connect();
+  }
+  if ((uint32_t)(now - wifiDownAt) >= kLinkDownRestartMs)
+    restartMarked(kWifiLinkMagic);
+}
+
+int wifiHealthLine(char* buf, size_t cap) {
+  if (!buf || cap == 0)
+    return 0;
+  return snprintf(buf, cap, "link:%s rssi:%d miss:%u gateway:%s\n",
+                  stationLinked() ? "up" : "down",
+                  (int)wifi_station_get_rssi(),
+                  (unsigned)probeFails,
+                  gatewayAnswers ? "ok" : "none");
 }
 
 static void logResetReason(const String& info) {
@@ -159,8 +312,7 @@ static void logResetReason(const String& info) {
 void setup() {
   Serial.begin(115200);
   Serial.println();
-  String resetInfo = takeNullFrameRestart() ? String("Null frame restart")
-                                            : ESP.getResetInfo();
+  String resetInfo = markedResetInfo();
   Serial.print("Reset: ");
   Serial.println(resetInfo);
 
@@ -213,15 +365,18 @@ void setup() {
   mqttInit();
    
   initWifiManager();
+  wifi_station_set_reconnect_policy(true);
   #ifndef GARAGE
   keepRadioAwake();
   #endif
 
   //Send OTA events to the browser
   ArduinoOTA.onStart([]() {
+    otaBusy = true;
     events.send("Update Start", "ota");
   });
   ArduinoOTA.onEnd([]() {
+    otaBusy = false;
     events.send("Update End", "ota");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -230,6 +385,7 @@ void setup() {
     events.send(p, "ota");
   });
   ArduinoOTA.onError([](ota_error_t error) {
+    otaBusy = false;
     if (error == OTA_AUTH_ERROR) events.send("Auth Failed", "ota");
     else if (error == OTA_BEGIN_ERROR) events.send("Begin Failed", "ota");
     else if (error == OTA_CONNECT_ERROR) events.send("Connect Failed", "ota");
@@ -469,5 +625,6 @@ void loop() {
 
   // Handle other processes
   ArduinoOTA.handle();
+  pollWifiStall();
 }
 

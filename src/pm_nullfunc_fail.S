@@ -8,8 +8,11 @@
  * the station is gone until a power cycle.
  *
  * Write a marker where boot can see it and restart. RTC user word 120 is
- * absolute word 184 at 0x600014e0, past the 32-word eboot command. The magic
- * is 0x6e31. setup() turns that into "Null frame restart" and clears it.
+ * absolute word 184. system_rtc_mem word 0 lives at 0x60001100, so word 184
+ * is 0x600013e0, past the 32-word eboot command and inside the 512-byte
+ * user window (it ends at 0x600013ff). 0x600014e0 is past that window, and
+ * a marker stored there does not survive the restart. The magic is 0x6e31.
+ * setup() turns that into "Null frame restart" and clears it.
  * A send that got a buffer never gets here.
  *
  * system_restart() is not a restart. It stops the station, arms a 100ms
@@ -26,7 +29,7 @@
 .section .irom0.text, "ax"
 .align 4
 .literal_position
-.literal .Lrtc, 0x600014e0
+.literal .Lrtc, 0x600013e0
 .literal .Lrtcwrite, system_rtc_mem_write
 .literal .Lfeed, pp_soft_wdt_feed
 .literal .Lrestart, __real_system_restart_local

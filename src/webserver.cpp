@@ -84,6 +84,12 @@ void init_httpd() {
     request->send(200, "text/plain", String(ESP.getFreeHeap()));
   });
 
+  server.on("/wifi", HTTP_GET, [](AsyncWebServerRequest * request) {
+    char buf[64];
+    wifiHealthLine(buf, sizeof(buf));
+    request->send(200, "text/plain", buf);
+  });
+
   server.on("/resetSettings", HTTP_GET, [](AsyncWebServerRequest * request) {
     if (!request->authenticate(settings.http_username, settings.http_password))
       return request->requestAuthentication();

@@ -16,3 +16,6 @@ void init_httpd();
 void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
 void handleWebSocketCommand(char* payload, size_t length, AsyncWebSocketClient* client);
 void printStatusJsonToSocketClient(AsyncWebSocketClient* client);
+
+// One line for GET /wifi. Defined in the sketch, next to the stall watchdog.
+int wifiHealthLine(char* buf, size_t cap);
